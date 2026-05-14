@@ -261,6 +261,46 @@ func dropAllTorrent() {
 	}
 }
 
+// ClearAllCache drops every active torrent and removes its on-disk cache files,
+// but keeps the torrent entries in the database so they can be re-played later.
+func ClearAllCache() int {
+	if sets.ReadOnly {
+		log.TLogln("API ClearAllCache: Read-only DB mode!")
+		return 0
+	}
+	cleared := 0
+	torrs := bts.ListTorrents()
+	hashes := make([]metainfo.Hash, 0, len(torrs))
+	for h := range torrs {
+		hashes = append(hashes, h)
+	}
+	for _, h := range hashes {
+		bts.RemoveTorrent(h)
+	}
+	if sets.BTsets.UseDisk && sets.BTsets.TorrentsSavePath != "" {
+		entries, _ := os.ReadDir(sets.BTsets.TorrentsSavePath)
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			name := entry.Name()
+			if name == "" || name == "/" || len(name) != 40 {
+				continue
+			}
+			dir := filepath.Join(sets.BTsets.TorrentsSavePath, name)
+			ff, _ := os.ReadDir(dir)
+			for _, f := range ff {
+				os.Remove(filepath.Join(dir, f.Name()))
+			}
+			if err := os.Remove(dir); err == nil {
+				cleared++
+			}
+		}
+	}
+	log.TLogln("ClearAllCache: cleared cache for", cleared, "torrents")
+	return cleared
+}
+
 func Shutdown() {
 	bts.Disconnect()
 	sets.CloseDB()
@@ -273,9 +313,7 @@ func WriteStatus(w io.Writer) {
 }
 
 func Preload(torr *Torrent, index int) {
-	cache := float32(sets.BTsets.CacheSize)
-	preload := float32(sets.BTsets.PreloadCache)
-	size := int64((cache / 100.0) * preload)
+	size := int64(sets.BTsets.PreloadCache) * 1024 * 1024
 	if size <= 0 {
 		return
 	}

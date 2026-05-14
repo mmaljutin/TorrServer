@@ -3,7 +3,6 @@ package torr
 import (
 	"fmt"
 	"io"
-	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -273,77 +272,65 @@ func (t *Torrent) Preload(index int, size int64) {
 	}
 }
 
-// SequentialPreload downloads the first PreloadSizeMB bytes of each video file one by one.
-// After all heads are preloaded, if AutoDownload is enabled, the entire torrent is queued for download.
-// Designed for HDD: sequential file-by-file to minimize head seeks.
+// SequentialPreload preloads the first PreloadSizeMB bytes of each file after a torrent is added.
+// This runs once on add; streaming preload is handled separately by the existing Preload mechanism.
 func (t *Torrent) SequentialPreload() {
 	preloadBytes := settings.BTsets.PreloadSizeMB * 1024 * 1024
 	if preloadBytes <= 0 || !settings.BTsets.UseDisk {
 		return
 	}
 
-	files := t.Files()
-	if len(files) == 0 {
+	st := t.Status()
+	if len(st.FileStats) == 0 {
+		log.TLogln("SequentialPreload: no files for", t.Hash().HexString())
 		return
 	}
 
-	sort.Slice(files, func(i, j int) bool {
-		return utils2.CompareStrings(files[i].Path(), files[j].Path())
-	})
+	const minFileSize = 50 << 20 // skip files smaller than 50 MB (subtitles, NFO, etc.)
 
-	log.TLogln("SequentialPreload start:", t.Hash().HexString(), "files:", len(files), "preload:", preloadBytes)
+	var toPreload []*state.TorrentFileStat
+	for _, fs := range st.FileStats {
+		if fs.Length >= minFileSize {
+			toPreload = append(toPreload, fs)
+		}
+	}
+	if len(toPreload) == 0 {
+		log.TLogln("SequentialPreload: no large files to preload for", t.Hash().HexString())
+		return
+	}
 
-	for _, file := range files {
+	log.TLogln("SequentialPreload start:", t.Hash().HexString(), "large files:", len(toPreload), "preload per file:", preloadBytes)
+
+	for _, fileStat := range toPreload {
 		t.muTorrent.Lock()
 		closed := t.Stat == state.TorrentClosed
 		t.muTorrent.Unlock()
 		if closed {
 			return
 		}
-
-		size := preloadBytes
-		if size > file.Length() {
-			size = file.Length()
-		}
-
-		reader := file.NewReader()
-		if reader == nil {
-			continue
-		}
-		reader.SetResponsive()
-		reader.SetReadahead(0)
-
-		buf := make([]byte, 32768)
-		var offset int64
-		for offset < size {
-			t.muTorrent.Lock()
-			closed = t.Stat == state.TorrentClosed
-			t.muTorrent.Unlock()
-			if closed {
-				reader.Close()
-				return
-			}
-			n, err := reader.Read(buf)
-			if err != nil {
-				break
-			}
-			offset += int64(n)
-		}
-		reader.Close()
-		log.TLogln("SequentialPreload file done:", file.Path(), utils2.Format(float64(offset)))
+		t.Preload(fileStat.Id, preloadBytes)
 	}
 
 	log.TLogln("SequentialPreload complete:", t.Hash().HexString())
+}
 
-	if settings.BTsets.AutoDownload {
-		t.muTorrent.Lock()
-		closed := t.Stat == state.TorrentClosed
-		t.muTorrent.Unlock()
-		if !closed && t.Torrent != nil {
-			log.TLogln("AutoDownload start:", t.Hash().HexString())
-			t.Torrent.DownloadAll()
-		}
+// DownloadFileByIndex starts downloading the entire file at the given index to disk.
+// Called when AutoDownload is enabled and a file is opened for streaming.
+func (t *Torrent) DownloadFileByIndex(index int) {
+	t.muTorrent.Lock()
+	closed := t.Stat == state.TorrentClosed
+	t.muTorrent.Unlock()
+	if closed || t.Torrent == nil {
+		return
 	}
+	file := t.findFileIndex(index)
+	if file == nil {
+		log.TLogln("AutoDownload: file not found index", index, t.Hash().HexString())
+		return
+	}
+	log.TLogln("AutoDownload start:", file.DisplayPath(), t.Hash().HexString())
+	t.AddExpiredTime(time.Hour * 24) // keep torrent alive during download
+	file.Download()
 }
 
 func (t *Torrent) findFileIndex(index int) *torrent.File {

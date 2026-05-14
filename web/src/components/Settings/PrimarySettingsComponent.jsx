@@ -32,17 +32,17 @@ export default function PrimarySettingsComponent({
   settings,
   inputForm,
   cachePercentage,
-  preloadCachePercentage,
+  preloadCacheMB,
   cacheSize,
   isProMode,
   setCacheSize,
   setCachePercentage,
-  setPreloadCachePercentage,
+  setPreloadCacheMB,
   updateSettings,
 }) {
   const { t } = useTranslation()
   const { UseDisk, TorrentsSavePath, RemoveCacheOnDrop, AutoDownload, PreloadSizeMB } = settings || {}
-  const preloadCacheSize = Math.round((cacheSize / 100) * preloadCachePercentage)
+  const preloadCacheAsPercent = Math.min((preloadCacheMB / cacheSize) * 100, 100)
 
   return (
     <MainSettingsContent>
@@ -52,7 +52,7 @@ export default function PrimarySettingsComponent({
         <PreloadCachePercentage
           value={100 - cachePercentage}
           label={`${t('Cache')} ${cacheSize} ${t('MB')}`}
-          preloadCachePercentage={preloadCachePercentage}
+          preloadCachePercentage={preloadCacheAsPercent}
         />
 
         <CacheLegendGrid>
@@ -97,13 +97,14 @@ export default function PrimarySettingsComponent({
 
         <SliderInput
           isProMode={isProMode}
-          title={`${t('SettingsDialog.PreloadCache')} - ${preloadCachePercentage}% (${preloadCacheSize} ${t('MB')})`}
-          value={preloadCachePercentage}
-          setValue={setPreloadCachePercentage}
+          title={`${t('SettingsDialog.PreloadCache')} - ${preloadCacheMB} ${t('MB')}`}
+          value={preloadCacheMB}
+          setValue={setPreloadCacheMB}
           sliderMin={0}
-          sliderMax={100}
+          sliderMax={10000}
           inputMin={0}
-          inputMax={100}
+          inputMax={999999}
+          step={1}
         />
       </div>
 

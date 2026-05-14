@@ -11,18 +11,18 @@ import {
   SortByAlpha as SortByAlphaIcon,
   Search as SearchIcon,
 } from '@material-ui/icons'
-import { echoHost, streamHost } from 'utils/Hosts'
+import { echoHost, playlistHost } from 'utils/Hosts'
 import Div100vh from 'react-div-100vh'
 import axios from 'axios'
 import TorrentList from 'components/TorrentList'
 import DonateSnackbar from 'components/Donate'
 import DonateDialog from 'components/Donate/DonateDialog'
 import useChangeLanguage from 'utils/useChangeLanguage'
+import { useTranslation } from 'react-i18next'
 import { ThemeProvider as MuiThemeProvider } from '@material-ui/core/styles'
 import { ThemeProvider as StyledComponentsThemeProvider } from 'styled-components'
 import { useQuery } from 'react-query'
 import { getTorrents, isStandaloneApp } from 'utils/Utils'
-import { isFilePlayable } from 'components/DialogTorrentDetailsContent/helpers'
 import GlobalStyle from 'style/GlobalStyle'
 import { /* lightTheme, */ THEME_MODES, useMaterialUITheme } from 'style/materialUISetup'
 import getStyledComponentsTheme from 'style/getStyledComponentsTheme'
@@ -39,6 +39,7 @@ const snackbarIsClosed = JSON.parse(localStorage.getItem('snackbarIsClosed'))
 export const DarkModeContext = createContext()
 
 export default function App() {
+  const { t } = useTranslation()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isDonationDialogOpen, setIsDonationDialogOpen] = useState(false)
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false)
@@ -68,20 +69,19 @@ export default function App() {
   }, [])
   const clearSelection = () => setSelectedHashes(new Set())
 
-  const downloadPlaylist = () => {
+  const downloadPlaylist = async () => {
     if (!torrents || selectedHashes.size === 0) return
     const selected = torrents.filter(t => selectedHashes.has(t.hash))
-    let m3u = '#EXTM3U\n'
-    for (const torrent of selected) {
-      const files = (torrent.data && JSON.parse(torrent.data).TorrServer?.Files) || []
-      const playable = files.filter(f => isFilePlayable(f.path))
-      for (const file of playable) {
-        const name = file.path.split('/').pop().split('\\').pop()
-        m3u += `#EXTINF:-1,${name}\n`
-        m3u += `${streamHost()}/${encodeURIComponent(name)}?link=${torrent.hash}&index=${file.id}&play\n`
-      }
-    }
-    const blob = new Blob([m3u], { type: 'application/x-mpegurl' })
+    const bodies = await Promise.all(
+      selected.map(torrent =>
+        fetch(`${playlistHost()}?hash=${torrent.hash}`)
+          .then(res => (res.ok ? res.text() : ''))
+          .then(text => text.replace(/^#EXTM3U\s*\n?/, ''))
+          .catch(() => ''),
+      ),
+    )
+    const combined = `#EXTM3U\n${bodies.filter(Boolean).join('\n')}`
+    const blob = new Blob([combined], { type: 'application/x-mpegurl' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -195,11 +195,11 @@ export default function App() {
 
                 {selectedHashes.size > 0 && (
                   <SelectionBar>
-                    <span>{selectedHashes.size} выбрано</span>
+                    <span>{t('SelectedCount', { count: selectedHashes.size })}</span>
                     <SelectionBarButton primary onClick={downloadPlaylist}>
-                      ⬇ Скачать плейлист (.m3u)
+                      {t('DownloadPlaylist')}
                     </SelectionBarButton>
-                    <SelectionBarButton onClick={clearSelection}>Отмена</SelectionBarButton>
+                    <SelectionBarButton onClick={clearSelection}>{t('Cancel')}</SelectionBarButton>
                   </SelectionBar>
                 )}
 

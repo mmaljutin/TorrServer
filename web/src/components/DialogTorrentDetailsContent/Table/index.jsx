@@ -1,8 +1,7 @@
 import { streamHost } from 'utils/Hosts'
-import isEqual from 'lodash/isEqual'
 import { humanizeSize, detectStandaloneApp, isMacOS, isAppleDevice } from 'utils/Utils'
 import ptt from 'parse-torrent-title'
-import { Button } from '@material-ui/core'
+import { Button, Checkbox } from '@material-ui/core'
 import CopyToClipboard from 'react-copy-to-clipboard'
 import { useTranslation } from 'react-i18next'
 
@@ -17,7 +16,7 @@ ptt.addHandler('season', /sezon[- |. ](\d{1,3})|(\d{1,3})[- |. ]sezon/i, { type:
 ptt.addHandler('season', /сезон[- |. ](\d{1,3})|(\d{1,3})[- |. ]сезон/i, { type: 'integer' })
 
 const Table = memo(
-  ({ playableFileList, viewedFileList, selectedSeason, seasonAmount, hash }) => {
+  ({ playableFileList, viewedFileList, selectedSeason, seasonAmount, hash, selectedFileIds, onFileToggle }) => {
     const { t } = useTranslation()
     const [isSupported, setIsSupported] = useState(true)
     const preloadBuffer = fileId => fetch(`${streamHost()}?link=${hash}&index=${fileId}&preload`)
@@ -46,6 +45,7 @@ const Table = memo(
           <thead>
             <tr>
               <th style={{ width: '0' }}>{t('Viewed')}</th>
+              {onFileToggle && <th style={{ width: '0' }} aria-label='Select' />}
               <th>{t('Name')}</th>
               {fileHasSeasonText && seasonAmount?.length === 1 && <th style={{ width: '0' }}>{t('Season')}</th>}
               {fileHasEpisodeText && <th style={{ width: '0' }}>{t('Episode')}</th>}
@@ -68,6 +68,17 @@ const Table = memo(
                 (season === selectedSeason || !seasonAmount?.length) && (
                   <tr key={id} className={isViewed ? 'viewed-file-row' : null}>
                     <td data-label='viewed' aria-label='viewed' className={isViewed ? 'viewed-file-indicator' : null} />
+                    {onFileToggle && (
+                      <td style={{ padding: '0 4px' }}>
+                        <Checkbox
+                          color='secondary'
+                          size='small'
+                          checked={selectedFileIds?.has(id) ?? false}
+                          onChange={() => onFileToggle(id)}
+                          inputProps={{ 'aria-label': 'select file' }}
+                        />
+                      </td>
+                    )}
                     <td data-label='name'>{shouldDisplayFullFileName ? path : title}</td>
                     {fileHasSeasonText && seasonAmount?.length === 1 && <td data-label='season'>{season}</td>}
                     {fileHasEpisodeText && <td data-label='episode'>{episode}</td>}
@@ -143,7 +154,17 @@ const Table = memo(
             return (
               (season === selectedSeason || !seasonAmount?.length) && (
                 <ShortTable key={id} isViewed={isViewed}>
-                  <div className='short-table-name'>{shouldDisplayFullFileName ? path : title}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {onFileToggle && (
+                      <Checkbox
+                        color='secondary'
+                        size='small'
+                        checked={selectedFileIds?.has(id) ?? false}
+                        onChange={() => onFileToggle(id)}
+                      />
+                    )}
+                    <div className='short-table-name'>{shouldDisplayFullFileName ? path : title}</div>
+                  </div>
                   <div className='short-table-data'>
                     {isViewed && (
                       <div className='short-table-field'>
@@ -227,7 +248,13 @@ const Table = memo(
       </>
     )
   },
-  (prev, next) => isEqual(prev, next),
+  (prev, next) =>
+    prev.hash === next.hash &&
+    prev.selectedSeason === next.selectedSeason &&
+    prev.viewedFileList === next.viewedFileList &&
+    prev.playableFileList === next.playableFileList &&
+    prev.seasonAmount === next.seasonAmount &&
+    prev.selectedFileIds === next.selectedFileIds,
 )
 
 export default Table

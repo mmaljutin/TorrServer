@@ -148,7 +148,7 @@ func addTorrent(req torrReqJS, c *gin.Context) {
 			torr.SaveTorrentToDB(tor)
 		}
 
-		if set.BTsets.UseDisk && set.BTsets.PreloadSizeMB > 0 {
+		if set.BTsets.UseDisk {
 			go tor.SequentialPreload()
 		}
 	}()

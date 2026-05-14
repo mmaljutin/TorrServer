@@ -106,6 +106,10 @@ func torrentUpload(c *gin.Context) {
 			if save {
 				torr.SaveTorrentToDB(t)
 			}
+
+			if set.BTsets.UseDisk {
+				go t.SequentialPreload()
+			}
 		}(tor)
 
 		stats = append(stats, tor.Status())

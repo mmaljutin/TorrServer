@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"server/log"
 	"server/torrshash"
+	set "server/settings"
 	"strconv"
 	"strings"
 
@@ -194,6 +195,9 @@ func stream(c *gin.Context) {
 	} else
 	// return play if query
 	if play {
+		if set.BTsets.UseDisk && set.BTsets.AutoDownload && index > 0 {
+			go tor.DownloadFileByIndex(index)
+		}
 		tor.Stream(index, c.Request, c.Writer)
 		return
 	}

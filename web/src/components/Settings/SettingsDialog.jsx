@@ -29,7 +29,7 @@ export default function SettingsDialog({ handleClose }) {
   const [selectedTab, setSelectedTab] = useState(0)
   const [cacheSize, setCacheSize] = useState(32)
   const [cachePercentage, setCachePercentage] = useState(40)
-  const [preloadCachePercentage, setPreloadCachePercentage] = useState(0)
+  const [preloadCacheMB, setPreloadCacheMB] = useState(0)
   const isProMode = true
   const [isVlcUsed, setIsVlcUsed] = useState(JSON.parse(localStorage.getItem('isVlcUsed')) ?? false)
   const [isInfuseUsed, setIsInfuseUsed] = useState(JSON.parse(localStorage.getItem('isInfuseUsed')) ?? false)
@@ -48,7 +48,7 @@ export default function SettingsDialog({ handleClose }) {
     const sets = JSON.parse(JSON.stringify(settings))
     sets.CacheSize = cacheSize * 1024 * 1024
     sets.ReaderReadAHead = cachePercentage
-    sets.PreloadCache = preloadCachePercentage
+    sets.PreloadCache = preloadCacheMB
     axios.post(settingsHost(), { action: 'set', sets })
     // Clear TMDB cache so fresh settings are fetched on next poster search
     clearTMDBCache()
@@ -89,7 +89,7 @@ export default function SettingsDialog({ handleClose }) {
 
     setCacheSize(CacheSize)
     setCachePercentage(ReaderReadAHead)
-    setPreloadCachePercentage(PreloadCache)
+    setPreloadCacheMB(PreloadCache)
   }, [CacheSize, ReaderReadAHead, PreloadCache])
 
   const updateSettings = newProps => setSettings({ ...settings, ...newProps })
@@ -134,12 +134,12 @@ export default function SettingsDialog({ handleClose }) {
                   settings={settings}
                   inputForm={inputForm}
                   cachePercentage={cachePercentage}
-                  preloadCachePercentage={preloadCachePercentage}
+                  preloadCacheMB={preloadCacheMB}
                   cacheSize={cacheSize}
                   isProMode={isProMode}
                   setCacheSize={setCacheSize}
                   setCachePercentage={setCachePercentage}
-                  setPreloadCachePercentage={setPreloadCachePercentage}
+                  setPreloadCacheMB={setPreloadCacheMB}
                   updateSettings={updateSettings}
                 />
               </TabPanel>
@@ -179,7 +179,7 @@ export default function SettingsDialog({ handleClose }) {
           onClick={() => {
             setCacheSize(defaultSettings.CacheSize)
             setCachePercentage(defaultSettings.ReaderReadAHead)
-            setPreloadCachePercentage(defaultSettings.PreloadCache)
+            setPreloadCacheMB(defaultSettings.PreloadCache)
             updateSettings(defaultSettings)
             // Clear TMDB cache when resetting to defaults
             clearTMDBCache()

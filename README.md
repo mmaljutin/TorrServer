@@ -43,38 +43,39 @@ allowing the cache size to be adjusted according to the system parameters and th
 
 ### 📌 Pin Torrents (KeepFiles)
 
-A star button on every torrent card lets you **pin** a torrent. Pinned torrents are protected from automatic LRU cache eviction — they are only removed if unpinned content has already been cleared and disk space is still needed.
+A star button on every torrent card lets you **pin** a torrent. Pinned torrents are protected from cache eviction — useful for content you want to keep on disk long-term.
 
-### 🗄️ HDD-Optimized Sequential Preload
+### 🗄️ HDD-Optimized Pre-cache on Add
 
-When a torrent is added in **Disk** mode, TorrServer sequentially reads the first **N MB** of each file (configurable via *Preload file heads* setting, default 150 MB). Files are processed one by one to minimize HDD head seeks. This ensures playback can start immediately from cached data without waiting for on-demand buffering.
+When a torrent is added in **Disk** mode, TorrServer sequentially caches the first **N MB** of each *large* file (>50 MB — skips subtitles, NFOs, etc.). Configurable via *Pre-cache on add (MB per file)*, default **50 MB**. Files are processed one by one to minimize HDD head seeks, so any episode can start playing instantly without waiting for buffering.
 
-### ⬇️ Auto Full Download
+### ⬇️ Auto Full Download on Play
 
-An optional toggle that kicks in **after** sequential preload completes. When enabled, the entire torrent is queued for download in the background (`DownloadAll`). Useful when you want the full content pre-cached on disk. Cache size must be larger than the torrent for complete retention; otherwise LRU eviction keeps the most recently accessed data.
+Optional toggle: when a file is opened in a player (VLC, browser, etc.), TorrServer starts downloading the **entire file** to disk in the background. So while you're watching episode 1, episode 2's preload kicks in, and episode 1 finishes downloading fully. Files stay on disk for offline playback later.
 
-### 🔄 Smart Global Cache Cleanup (LRU)
+### 🎚️ Precise Playback Buffer (MB)
 
-A background worker runs every **30 seconds** and enforces the cache size limit automatically:
+The *Buffer Before Playback* setting is now in **megabytes** instead of percent. With 100 GB caches, 1% was 1 GB — too coarse. Now you can set an exact buffer size independent of total cache (default 150 MB).
 
-1. Unpinned torrents are evicted first — sorted by last access time (oldest first)
-2. Pinned torrents are only evicted if unpinned content wasn't enough to free space
+### 📋 Per-File Playlist Export
 
-### 📊 Cached % Indicator
-
-Each torrent card now displays the percentage of content currently stored in cache (e.g. `47%`), so you can see at a glance what's ready for instant playback.
+In the torrent details dialog, every file row now has a **checkbox**. Select specific files (e.g. only the episodes you want to download) and click *Download Selected* to get an `.m3u` with just those files. Subtitle tracks are automatically included.
 
 ### ☑️ Multi-Torrent Playlist Export
 
-Hover over any torrent poster to reveal a **checkbox**. Select multiple torrents and download a combined `.m3u` playlist — open it in VLC to get a unified playlist of all selected content.
+A **checkbox** is always visible on every torrent card poster. Select multiple torrents and click *Download Playlist* in the bottom selection bar — the M3U combines all playable files from all selected torrents, with direct stream URLs ready for VLC/Infuse/etc.
+
+### 🧹 Clear All Cache Button
+
+Sidebar action: **Clear All Cache** drops every active torrent and wipes its on-disk cache directory, while keeping the torrent entries in the library (re-downloads on next play). Has a 5-second confirmation guard to prevent accidental clicks. Handy when disk space runs low.
 
 ### 💾 Disk Cache up to 100 GB
 
-The cache size slider in Disk mode now goes up to **100 GB** (was 20 GB). In RAM mode the slider is capped at **4 GB** to stay within realistic memory limits. Switching between modes automatically clamps the value to a reasonable range.
+The cache size slider in Disk mode now goes up to **100 GB** (was 20 GB). RAM mode is capped at 4 GB. Switching modes automatically clamps the value to a reasonable range.
 
-### ⚙️ Always-On Advanced Settings
+### ⚙️ Sensible Defaults for HDD Mode
 
-The *Pro Mode* toggle has been removed. All advanced settings are always visible — no extra clicks needed.
+*Reset to Default* now configures TorrServer for disk-based media storage: 4096 MB cache, 95% readahead, 150 MB playback buffer, 50 MB pre-cache per file, UseDisk on, save path `/opt/ts`. The Pro Mode toggle has been removed — all advanced settings are always visible.
 
 ---
 

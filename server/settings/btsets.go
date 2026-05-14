@@ -28,7 +28,7 @@ type BTSets struct {
 	// Cache
 	CacheSize       int64 // in byte, def 64 MB
 	ReaderReadAHead int   // in percent, 5%-100%, [...S__X__E...] [S-E] not clean
-	PreloadCache    int   // in percent
+	PreloadCache    int   // in MB
 
 	// Disk
 	UseDisk           bool
@@ -88,8 +88,8 @@ type BTSets struct {
 	ProxyHosts  []string
 
 	// HDD Media Storage
-	AutoDownload  bool  // start full download after sequential preload
-	PreloadSizeMB int64 // MB to preload from each file head (0 = disabled)
+	AutoDownload  bool  // start full download when file is opened for streaming
+	PreloadSizeMB int64 // MB to preload from each file head on add (0 = disabled)
 }
 
 func (v *BTSets) String() string {
@@ -123,9 +123,6 @@ func SetBTSets(sets *BTSets) {
 
 	if sets.PreloadCache < 0 {
 		sets.PreloadCache = 0
-	}
-	if sets.PreloadCache > 100 {
-		sets.PreloadCache = 100
 	}
 
 	if sets.UseDisk && sets.TorrentsSavePath == "" {
@@ -164,8 +161,10 @@ func SetBTSets(sets *BTSets) {
 
 func SetDefaultConfig() {
 	sets := new(BTSets)
-	sets.CacheSize = 64 * 1024 * 1024 // 64 MB
-	sets.PreloadCache = 50
+	sets.CacheSize = 4096 * 1024 * 1024 // 4096 MB
+	sets.UseDisk = true
+	sets.TorrentsSavePath = "/opt/ts"
+	sets.PreloadCache = 150
 	sets.ConnectionsLimit = 25
 	sets.RetrackersMode = 1
 	sets.TorrentDisconnectTimeout = 30
@@ -173,7 +172,7 @@ func SetDefaultConfig() {
 	sets.ResponsiveMode = true
 	sets.ShowFSActiveTorr = true
 	sets.StoreSettingsInJson = true
-	sets.PreloadSizeMB = 150
+	sets.PreloadSizeMB = 50
 	// Set default TMDB settings
 	sets.TMDBSettings = TMDBConfig{
 		APIKey:     "",

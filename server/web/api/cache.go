@@ -40,6 +40,11 @@ func cache(c *gin.Context) {
 		{
 			getCache(req, c)
 		}
+	case "clearall":
+		{
+			cleared := torr.ClearAllCache()
+			c.JSON(http.StatusOK, gin.H{"cleared": cleared})
+		}
 	}
 }
 

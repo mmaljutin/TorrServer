@@ -11,6 +11,7 @@ export const streamHost = () => `${torrserverHost}/stream`
 export const shutdownHost = () => `${torrserverHost}/shutdown`
 export const echoHost = () => `${torrserverHost}/echo`
 export const playlistTorrHost = () => `${torrserverHost}/stream`
+export const playlistHost = () => `${torrserverHost}/playlist`
 export const torznabSearchHost = () => `${torrserverHost}/torznab/search`
 export const searchHost = () => `${torrserverHost}/search`
 export const torznabTestHost = () => `${torrserverHost}/torznab/test`

@@ -43,7 +43,6 @@ const Torrent = ({ torrent, isSelected, onToggleSelect }) => {
   const [isDeleteTorrentOpened, setIsDeleteTorrentOpened] = useState(false)
   const [isSupported, setIsSupported] = useState(true)
   const [keepFiles, setKeepFiles] = useState(!!torrent.keep_files)
-  const [isHovered, setIsHovered] = useState(false)
 
   const theme = useTheme()
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'))
@@ -116,17 +115,18 @@ const Torrent = ({ torrent, isSelected, onToggleSelect }) => {
   }
   return (
     <>
-      <TorrentCard onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+      <TorrentCard>
         <TorrentCardPoster isPoster={poster} onClick={handleClickOpenEditDialog}>
           {poster ? <img src={poster} alt='poster' /> : <NoImageIcon />}
-          {(isSelected || isHovered) && (
-            <SelectCheckbox
-              isSelected={isSelected}
-              onClick={e => { e.stopPropagation(); onToggleSelect && onToggleSelect(hash) }}
-            >
-              {isSelected && '✓'}
-            </SelectCheckbox>
-          )}
+          <SelectCheckbox
+            isSelected={isSelected}
+            onClick={e => {
+              e.stopPropagation()
+              onToggleSelect && onToggleSelect(hash)
+            }}
+          >
+            {isSelected && '✓'}
+          </SelectCheckbox>
         </TorrentCardPoster>
 
         <TorrentCardButtons>

@@ -299,8 +299,7 @@ func (c *Cache) setLoadPriority(ranges []Range) {
 }
 
 func (c *Cache) isIdInFileBE(ranges []Range, id int) bool {
-	// protect at least 8 MB, or PreloadSizeMB if configured
-	protected := int64(8 << 20)
+	protected := int64(8 << 20) // 8 MB minimum
 	if settings.BTsets.PreloadSizeMB > 0 {
 		if mb := settings.BTsets.PreloadSizeMB * 1024 * 1024; mb > protected {
 			protected = mb

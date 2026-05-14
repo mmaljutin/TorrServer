@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Button, ButtonGroup } from '@material-ui/core'
 import ptt from 'parse-torrent-title'
 import axios from 'axios'
-import { viewedHost } from 'utils/Hosts'
+import { viewedHost, playlistHost } from 'utils/Hosts'
 import { GETTING_INFO, IN_DB } from 'torrentStates'
 import CircularProgress from '@material-ui/core/CircularProgress'
 import { useTranslation } from 'react-i18next'
@@ -46,6 +46,7 @@ export default function DialogTorrentDetailsContent({ closeDialog, torrent }) {
   const [seasonAmount, setSeasonAmount] = useState(null)
   const [selectedSeason, setSelectedSeason] = useState()
   const [isSnakeDebugMode] = useState(JSON.parse(localStorage.getItem('isSnakeDebugMode')) || false)
+  const [selectedFileIds, setSelectedFileIds] = useState(new Set())
 
   const {
     poster,
@@ -101,9 +102,25 @@ export default function DialogTorrentDetailsContent({ closeDialog, torrent }) {
     })
   }, [hash])
 
-  const preloadPerc = settings?.PreloadCache
-  const preloadSize = (Capacity / 100) * preloadPerc
+  const preloadSize = (settings?.PreloadCache ?? 0) * 1024 * 1024
   const bufferSize = preloadSize > 33554432 ? preloadSize : 33554432 // Not less than 32MB
+
+  const toggleFileSelection = id => {
+    setSelectedFileIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const selectAllFiles = () => setSelectedFileIds(new Set(playableFileList?.map(f => f.id) ?? []))
+  const deselectAllFiles = () => setSelectedFileIds(new Set())
+
+  const customPlaylistUrl =
+    selectedFileIds.size > 0
+      ? `${playlistHost()}?hash=${hash}&index=${[...selectedFileIds].join(',')}`
+      : null
 
   const getParsedTitle = () => {
     const newNameStringArr = []
@@ -249,12 +266,32 @@ export default function DialogTorrentDetailsContent({ closeDialog, torrent }) {
                 </>
               )}
 
+              {playableFileList?.length > 1 && (
+                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', alignItems: 'center' }}>
+                  <Button variant='outlined' color='secondary' size='small' onClick={selectAllFiles}>
+                    {t('SelectAll')}
+                  </Button>
+                  <Button variant='outlined' color='secondary' size='small' onClick={deselectAllFiles}>
+                    {t('DeselectAll')}
+                  </Button>
+                  {customPlaylistUrl && (
+                    <a style={{ textDecoration: 'none' }} href={customPlaylistUrl}>
+                      <Button variant='contained' color='secondary' size='small'>
+                        {t('DownloadSelected', { count: selectedFileIds.size })}
+                      </Button>
+                    </a>
+                  )}
+                </div>
+              )}
+
               <Table
                 hash={hash}
                 playableFileList={playableFileList}
                 viewedFileList={viewedFileList}
                 selectedSeason={selectedSeason}
                 seasonAmount={seasonAmount}
+                selectedFileIds={selectedFileIds}
+                onFileToggle={toggleFileSelection}
               />
             </TorrentFilesSection>
           </DialogContentGrid>

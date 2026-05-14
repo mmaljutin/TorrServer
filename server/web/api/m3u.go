@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -68,6 +69,7 @@ func allPlayList(c *gin.Context) {
 func playList(c *gin.Context) {
 	hash, _ := c.GetQuery("hash")
 	_, fromlast := c.GetQuery("fromlast")
+	indexParam, hasIndex := c.GetQuery("index")
 	if hash == "" {
 		c.AbortWithError(http.StatusBadRequest, errors.New("hash is empty"))
 		return
@@ -88,8 +90,25 @@ func playList(c *gin.Context) {
 	}
 
 	host := utils.GetScheme(c) + "://" + utils.GetHost(c)
-	list := getM3uList(tor.Status(), host, fromlast)
-	list = "#EXTM3U\n" + list
+	status := tor.Status()
+
+	var list string
+	if hasIndex && indexParam != "" {
+		selectedIDs := map[int]bool{}
+		for _, s := range strings.Split(indexParam, ",") {
+			s = strings.TrimSpace(s)
+			if s == "" {
+				continue
+			}
+			if id, err := strconv.Atoi(s); err == nil {
+				selectedIDs[id] = true
+			}
+		}
+		list = "#EXTM3U\n" + getM3uListFiltered(status, host, selectedIDs)
+	} else {
+		list = "#EXTM3U\n" + getM3uList(status, host, fromlast)
+	}
+
 	name := strings.ReplaceAll(c.Param("fname"), `/`, "") // strip starting / from param
 	if name == "" {
 		name = tor.Name() + ".m3u"
@@ -160,6 +179,34 @@ func findFileNamesakes(files []*state.TorrentFileStat, file *state.TorrentFileSt
 		}
 	}
 	return namesakes
+}
+
+func getM3uListFiltered(tor *state.TorrentStatus, host string, selectedIDs map[int]bool) string {
+	m3u := ""
+	for _, f := range tor.FileStats {
+		if !selectedIDs[f.Id] {
+			continue
+		}
+		if utils.GetMimeType(f.Path) != "*/*" {
+			fn := filepath.Base(f.Path)
+			if fn == "" {
+				fn = f.Path
+			}
+			m3u += "#EXTINF:0," + fn + "\n"
+			fileNamesakes := findFileNamesakes(tor.FileStats, f)
+			if fileNamesakes != nil {
+				m3u += "#EXTVLCOPT:input-slave="
+				for _, namesake := range fileNamesakes {
+					sname := filepath.Base(namesake.Path)
+					m3u += host + "/stream/" + url.PathEscape(sname) + "?link=" + tor.Hash + "&index=" + fmt.Sprint(namesake.Id) + "&play#"
+				}
+				m3u += "\n"
+			}
+			name := filepath.Base(f.Path)
+			m3u += host + "/stream/" + url.PathEscape(name) + "?link=" + tor.Hash + "&index=" + fmt.Sprint(f.Id) + "&play\n"
+		}
+	}
+	return m3u
 }
 
 func searchLastPlayed(tor *state.TorrentStatus) int {

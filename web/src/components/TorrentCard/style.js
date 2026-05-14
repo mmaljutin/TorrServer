@@ -261,18 +261,12 @@ export const SelectCheckbox = styled.div`
   display: grid;
   place-items: center;
   cursor: pointer;
-  opacity: ${({ isSelected }) => (isSelected ? 1 : 0)};
-  transition: opacity 0.15s, background 0.15s;
+  opacity: 1;
+  transition: background 0.15s, border-color 0.15s;
   z-index: 1;
   font-size: 13px;
   color: #1a1a1a;
   font-weight: bold;
-
-  ${({ isSelected }) => !isSelected && `
-    .torrent-card-root:hover & {
-      opacity: 1;
-    }
-  `}
 `
 
 export const StatusIndicators = styled.div`

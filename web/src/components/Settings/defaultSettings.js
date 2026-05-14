@@ -1,9 +1,9 @@
 export default {
-  CacheSize: 64,
+  CacheSize: 4096,
   ReaderReadAHead: 95,
-  PreloadCache: 50,
-  UseDisk: false,
-  TorrentsSavePath: '',
+  PreloadCache: 150,
+  UseDisk: true,
+  TorrentsSavePath: '/opt/ts',
   RemoveCacheOnDrop: false,
   ForceEncrypt: false,
   RetrackersMode: 1,
@@ -32,5 +32,5 @@ export default {
   EnableProxy: false,
   ProxyHosts: ['*themoviedb.org', '*tmdb.org', 'rutor.info'],
   AutoDownload: false,
-  PreloadSizeMB: 150,
+  PreloadSizeMB: 50,
 }
