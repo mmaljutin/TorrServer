@@ -117,7 +117,7 @@ func GetTorrent(hashHex string) *Torrent {
 	return tor
 }
 
-func SetTorrent(hashHex, title, poster, category string, data string) *Torrent {
+func SetTorrent(hashHex, title, poster, category string, data string, keepFiles *bool) *Torrent {
 	hash := metainfo.NewHashFromHex(hashHex)
 	torr := bts.GetTorrent(hash)
 	torrDb := GetTorrentDB(hash)
@@ -140,6 +140,12 @@ func SetTorrent(hashHex, title, poster, category string, data string) *Torrent {
 		if data != "" {
 			torr.Data = data
 		}
+		if keepFiles != nil {
+			torr.KeepFiles = *keepFiles
+			if torr.cache != nil {
+				torr.cache.SetKeepFiles(*keepFiles)
+			}
+		}
 	}
 	// update torrent data in DB
 	if torrDb != nil {
@@ -148,6 +154,9 @@ func SetTorrent(hashHex, title, poster, category string, data string) *Torrent {
 		torrDb.Category = category
 		if data != "" {
 			torrDb.Data = data
+		}
+		if keepFiles != nil {
+			torrDb.KeepFiles = *keepFiles
 		}
 		AddTorrentDB(torrDb)
 	}

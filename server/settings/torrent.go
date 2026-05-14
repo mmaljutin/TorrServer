@@ -19,6 +19,7 @@ type TorrentDB struct {
 
 	Timestamp int64 `json:"timestamp,omitempty"`
 	Size      int64 `json:"size,omitempty"`
+	KeepFiles bool  `json:"keep_files,omitempty"`
 }
 
 type File struct {

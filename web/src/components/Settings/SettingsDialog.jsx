@@ -1,7 +1,6 @@
 import axios from 'axios'
 import Button from '@material-ui/core/Button'
-import Switch from '@material-ui/core/Switch'
-import { FormControlLabel, useMediaQuery, useTheme } from '@material-ui/core'
+import { useMediaQuery, useTheme } from '@material-ui/core'
 import { settingsHost } from 'utils/Hosts'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -31,7 +30,7 @@ export default function SettingsDialog({ handleClose }) {
   const [cacheSize, setCacheSize] = useState(32)
   const [cachePercentage, setCachePercentage] = useState(40)
   const [preloadCachePercentage, setPreloadCachePercentage] = useState(0)
-  const [isProMode, setIsProMode] = useState(JSON.parse(localStorage.getItem('isProMode')) || false)
+  const isProMode = true
   const [isVlcUsed, setIsVlcUsed] = useState(JSON.parse(localStorage.getItem('isVlcUsed')) ?? false)
   const [isInfuseUsed, setIsInfuseUsed] = useState(JSON.parse(localStorage.getItem('isInfuseUsed')) ?? false)
   const [isIinaUsed, setIsIinaUsed] = useState(JSON.parse(localStorage.getItem('isIinaUsed')) ?? false)
@@ -101,21 +100,6 @@ export default function SettingsDialog({ handleClose }) {
     <StyledDialog open onClose={handleClose} fullScreen={fullScreen} fullWidth maxWidth='md' ref={ref}>
       <SettingsHeader>
         <div>{t('SettingsDialog.Settings')}</div>
-        <FormControlLabel
-          control={
-            <Switch
-              checked={isProMode}
-              onChange={({ target: { checked } }) => {
-                setIsProMode(checked)
-                localStorage.setItem('isProMode', checked)
-                if (!checked) setSelectedTab(0)
-              }}
-              style={{ color: 'white' }}
-            />
-          }
-          label={t('SettingsDialog.ProMode')}
-          labelPlacement='start'
-        />
       </SettingsHeader>
 
       <AppBar position='static' color='default'>
@@ -129,16 +113,7 @@ export default function SettingsDialog({ handleClose }) {
         >
           <StyledTab label={t('SettingsDialog.Tabs.Main')} {...a11yProps(0)} />
 
-          <StyledTab
-            disabled={!isProMode}
-            label={
-              <>
-                <span>{t('SettingsDialog.Tabs.Additional')}</span>
-                {!isProMode && <span className='disabled-hint'>{t('SettingsDialog.Tabs.AdditionalDisabled')}</span>}
-              </>
-            }
-            {...a11yProps(1)}
-          />
+          <StyledTab label={t('SettingsDialog.Tabs.Additional')} {...a11yProps(1)} />
 
           <StyledTab label={t('Search')} {...a11yProps(2)} />
 

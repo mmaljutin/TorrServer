@@ -31,4 +31,6 @@ export default {
   StoreSettingsInJson: true,
   EnableProxy: false,
   ProxyHosts: ['*themoviedb.org', '*tmdb.org', 'rutor.info'],
+  AutoDownload: false,
+  PreloadSizeMB: 150,
 }

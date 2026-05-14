@@ -4,6 +4,8 @@ import {
   PlayArrow as PlayArrowIcon,
   Close as CloseIcon,
   Delete as DeleteIcon,
+  Star as StarIcon,
+  StarBorder as StarBorderIcon,
 } from '@material-ui/icons'
 import { getPeerString, humanizeSize, humanizeSpeed, removeRedundantCharacters } from 'utils/Utils'
 import { playlistTorrHost, streamHost, torrentsHost } from 'utils/Hosts'
@@ -30,15 +32,18 @@ import {
   TorrentCardButtons,
   TorrentCardDescription,
   TorrentCardPoster,
+  SelectCheckbox,
 } from './style'
 
 const Transition = forwardRef((props, ref) => <Slide direction='up' ref={ref} {...props} />)
 
-const Torrent = ({ torrent }) => {
+const Torrent = ({ torrent, isSelected, onToggleSelect }) => {
   const { t } = useTranslation()
   const [isDetailedInfoOpened, setIsDetailedInfoOpened] = useState(false)
   const [isDeleteTorrentOpened, setIsDeleteTorrentOpened] = useState(false)
   const [isSupported, setIsSupported] = useState(true)
+  const [keepFiles, setKeepFiles] = useState(!!torrent.keep_files)
+  const [isHovered, setIsHovered] = useState(false)
 
   const theme = useTheme()
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'))
@@ -54,6 +59,7 @@ const Torrent = ({ torrent }) => {
     category,
     poster,
     torrent_size: torrentSize,
+    loaded_size: loadedSize,
     download_speed: downloadSpeed,
     hash,
     stat,
@@ -62,6 +68,13 @@ const Torrent = ({ torrent }) => {
 
   const dropTorrent = () => axios.post(torrentsHost(), { action: 'drop', hash })
   const deleteTorrent = () => axios.post(torrentsHost(), { action: 'rem', hash })
+  const toggleKeepFiles = () => {
+    const newVal = !keepFiles
+    setKeepFiles(newVal)
+    axios.post(torrentsHost(), { action: 'set', hash, keep_files: newVal })
+  }
+
+  const cachedPercent = torrentSize > 0 && loadedSize > 0 ? Math.round((loadedSize / torrentSize) * 100) : 0
 
   const getParsedTitle = () => {
     const parse = key => ptt.parse(title || '')?.[key] || ptt.parse(name || '')?.[key]
@@ -103,12 +116,25 @@ const Torrent = ({ torrent }) => {
   }
   return (
     <>
-      <TorrentCard>
+      <TorrentCard onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
         <TorrentCardPoster isPoster={poster} onClick={handleClickOpenEditDialog}>
           {poster ? <img src={poster} alt='poster' /> : <NoImageIcon />}
+          {(isSelected || isHovered) && (
+            <SelectCheckbox
+              isSelected={isSelected}
+              onClick={e => { e.stopPropagation(); onToggleSelect && onToggleSelect(hash) }}
+            >
+              {isSelected && '✓'}
+            </SelectCheckbox>
+          )}
         </TorrentCardPoster>
 
         <TorrentCardButtons>
+          <StyledButton onClick={toggleKeepFiles} title={t('KeepFiles')}>
+            {keepFiles ? <StarIcon style={{ color: '#FFD700' }} /> : <StarBorderIcon />}
+            <span>{t('KeepFiles')}</span>
+          </StyledButton>
+
           <StyledButton onClick={openDetailedInfo}>
             <UnfoldMoreIcon />
             <span>{t('Details')}</span>
@@ -157,7 +183,10 @@ const Torrent = ({ torrent }) => {
                 <StatusIndicator stat={stat} />
                 {t('Size')}
               </div>
-              <div className='description-statistics-element-value'>{torrentSize > 0 && humanizeSize(torrentSize)}</div>
+              <div className='description-statistics-element-value'>
+                {torrentSize > 0 && humanizeSize(torrentSize)}
+                {cachedPercent > 0 && <span style={{ marginLeft: 4, color: '#8BC34A', fontSize: '0.85em' }}>{cachedPercent}%</span>}
+              </div>
             </div>
 
             <div className='description-statistics-element-wrapper'>
@@ -259,7 +288,10 @@ export default memo(Torrent, (prev, next) => {
     p.category === n.category &&
     p.stat === n.stat &&
     p.torrent_size === n.torrent_size &&
+    p.loaded_size === n.loaded_size &&
     p.download_speed === n.download_speed &&
-    p.data === n.data
+    p.data === n.data &&
+    p.keep_files === n.keep_files &&
+    prev.isSelected === next.isSelected
   )
 })

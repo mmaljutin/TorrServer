@@ -196,3 +196,36 @@ export const StyledIconButton = styled(IconButton)`
     display: none;
   `)}
 `
+
+export const SelectionBar = styled.div`
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #323637;
+  color: #fff;
+  border-radius: 8px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  white-space: nowrap;
+`
+
+export const SelectionBarButton = styled.button`
+  background: ${({ primary }) => (primary ? '#CDDC39' : 'transparent')};
+  color: ${({ primary }) => (primary ? '#1a1a1a' : '#fff')};
+  border: ${({ primary }) => (primary ? 'none' : '1px solid rgba(255,255,255,0.4)')};
+  border-radius: 5px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: 0.2s;
+
+  :hover {
+    opacity: 0.85;
+  }
+`

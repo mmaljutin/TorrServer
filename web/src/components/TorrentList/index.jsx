@@ -6,7 +6,7 @@ import { TorrentListWrapper, CenteredGrid } from 'components/App/style'
 import NoServerConnection from './NoServerConnection'
 import AddFirstTorrent from './AddFirstTorrent'
 
-export default function TorrentList({ isOffline, isLoading, sortABC, torrents, sortCategory }) {
+export default function TorrentList({ isOffline, isLoading, sortABC, torrents, sortCategory, selectedHashes, onToggleSelect }) {
   const sortedTorrents = useMemo(() => {
     if (!torrents) return []
     const filtered = torrents.filter(torrent => sortCategory === 'all' || torrent.category === sortCategory)
@@ -41,7 +41,12 @@ export default function TorrentList({ isOffline, isLoading, sortABC, torrents, s
   return (
     <TorrentListWrapper>
       {sortedTorrents.map(torrent => (
-        <TorrentCard key={torrent.hash} torrent={torrent} />
+        <TorrentCard
+          key={torrent.hash}
+          torrent={torrent}
+          isSelected={selectedHashes?.has(torrent.hash) ?? false}
+          onToggleSelect={onToggleSelect}
+        />
       ))}
     </TorrentListWrapper>
   )

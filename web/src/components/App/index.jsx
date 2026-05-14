@@ -1,5 +1,5 @@
 import CssBaseline from '@material-ui/core/CssBaseline'
-import { createContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useEffect, useState } from 'react'
 import Typography from '@material-ui/core/Typography'
 import {
   Menu as MenuIcon,
@@ -11,7 +11,7 @@ import {
   SortByAlpha as SortByAlphaIcon,
   Search as SearchIcon,
 } from '@material-ui/icons'
-import { echoHost } from 'utils/Hosts'
+import { echoHost, streamHost } from 'utils/Hosts'
 import Div100vh from 'react-div-100vh'
 import axios from 'axios'
 import TorrentList from 'components/TorrentList'
@@ -22,13 +22,14 @@ import { ThemeProvider as MuiThemeProvider } from '@material-ui/core/styles'
 import { ThemeProvider as StyledComponentsThemeProvider } from 'styled-components'
 import { useQuery } from 'react-query'
 import { getTorrents, isStandaloneApp } from 'utils/Utils'
+import { isFilePlayable } from 'components/DialogTorrentDetailsContent/helpers'
 import GlobalStyle from 'style/GlobalStyle'
 import { /* lightTheme, */ THEME_MODES, useMaterialUITheme } from 'style/materialUISetup'
 import getStyledComponentsTheme from 'style/getStyledComponentsTheme'
 import checkIsIOS from 'utils/checkIsIOS'
 import SearchDialog from 'components/Search/SearchDialog'
 
-import { AppWrapper, AppHeader, HeaderToggle, StyledIconButton, SidebarOverlay } from './style'
+import { AppWrapper, AppHeader, HeaderToggle, StyledIconButton, SidebarOverlay, SelectionBar, SelectionBarButton } from './style'
 import Sidebar from './Sidebar'
 import PWAFooter from './PWAFooter'
 import { PWAInstallationGuide } from './PWAInstallationGuide'
@@ -56,6 +57,38 @@ export default function App() {
   const [sortABC, setSortABC] = useState(false)
   const handleClickSortABC = () => setSortABC(true)
   const handleClickSortDate = () => setSortABC(false)
+
+  const [selectedHashes, setSelectedHashes] = useState(new Set())
+  const toggleSelect = useCallback(hash => {
+    setSelectedHashes(prev => {
+      const next = new Set(prev)
+      next.has(hash) ? next.delete(hash) : next.add(hash)
+      return next
+    })
+  }, [])
+  const clearSelection = () => setSelectedHashes(new Set())
+
+  const downloadPlaylist = () => {
+    if (!torrents || selectedHashes.size === 0) return
+    const selected = torrents.filter(t => selectedHashes.has(t.hash))
+    let m3u = '#EXTM3U\n'
+    for (const torrent of selected) {
+      const files = (torrent.data && JSON.parse(torrent.data).TorrServer?.Files) || []
+      const playable = files.filter(f => isFilePlayable(f.path))
+      for (const file of playable) {
+        const name = file.path.split('/').pop().split('\\').pop()
+        m3u += `#EXTINF:-1,${name}\n`
+        m3u += `${streamHost()}/${encodeURIComponent(name)}?link=${torrent.hash}&index=${file.id}&play\n`
+      }
+    }
+    const blob = new Blob([m3u], { type: 'application/x-mpegurl' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'playlist.m3u'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   useEffect(() => {
     axios.get(echoHost()).then(({ data }) => setTorrServerVersion(data))
@@ -156,7 +189,19 @@ export default function App() {
                   isLoading={isLoading}
                   sortABC={sortABC}
                   sortCategory={globalCategoryFilter}
+                  selectedHashes={selectedHashes}
+                  onToggleSelect={toggleSelect}
                 />
+
+                {selectedHashes.size > 0 && (
+                  <SelectionBar>
+                    <span>{selectedHashes.size} выбрано</span>
+                    <SelectionBarButton primary onClick={downloadPlaylist}>
+                      ⬇ Скачать плейлист (.m3u)
+                    </SelectionBarButton>
+                    <SelectionBarButton onClick={clearSelection}>Отмена</SelectionBarButton>
+                  </SelectionBar>
+                )}
 
                 <PWAFooter
                   isOffline={isOffline}

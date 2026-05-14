@@ -34,10 +34,11 @@ type Cache struct {
 	readers   map[*Reader]struct{}
 	muReaders sync.Mutex
 
-	isRemove bool
-	isClosed bool
-	muRemove sync.Mutex
-	torrent  *torrent.Torrent
+	isRemove  bool
+	isClosed  bool
+	keepFiles bool
+	muRemove  sync.Mutex
+	torrent   *torrent.Torrent
 }
 
 func NewCache(capacity int64, storage *Storage) *Cache {
@@ -77,6 +78,14 @@ func (c *Cache) Init(info *metainfo.Info, hash metainfo.Hash) {
 
 func (c *Cache) SetTorrent(torr *torrent.Torrent) {
 	c.torrent = torr
+}
+
+func (c *Cache) SetKeepFiles(keep bool) {
+	c.keepFiles = keep
+}
+
+func (c *Cache) IsKeepFiles() bool {
+	return c.keepFiles
 }
 
 func (c *Cache) Piece(m metainfo.Piece) storage.PieceImpl {
@@ -290,10 +299,16 @@ func (c *Cache) setLoadPriority(ranges []Range) {
 }
 
 func (c *Cache) isIdInFileBE(ranges []Range, id int) bool {
-	// keep 8/16 MB
+	// protect at least 8 MB, or PreloadSizeMB if configured
+	protected := int64(8 << 20)
+	if settings.BTsets.PreloadSizeMB > 0 {
+		if mb := settings.BTsets.PreloadSizeMB * 1024 * 1024; mb > protected {
+			protected = mb
+		}
+	}
 	FileRangeNotDelete := int64(c.pieceLength)
-	if FileRangeNotDelete < 8<<20 {
-		FileRangeNotDelete = 8 << 20
+	if FileRangeNotDelete < protected {
+		FileRangeNotDelete = protected
 	}
 
 	for _, rng := range ranges {
@@ -389,4 +404,15 @@ func (c *Cache) GetCapacity() int64 {
 		return 0
 	}
 	return c.capacity
+}
+
+// lastAccessTime returns the most recent piece access timestamp in the cache (unix seconds).
+func (c *Cache) lastAccessTime() int64 {
+	var latest int64
+	for _, p := range c.pieces {
+		if p.Accessed > latest {
+			latest = p.Accessed
+		}
+	}
+	return latest
 }

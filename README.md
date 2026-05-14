@@ -35,6 +35,49 @@ TorrServer is a program that allows users to view torrents online without the ne
 The core functionality of TorrServer includes caching torrents and subsequent data transfer via the HTTP protocol,
 allowing the cache size to be adjusted according to the system parameters and the user's internet connection speed.
 
+---
+
+## ✦ Fork Enhancements
+
+> This is a fork of [YouROK/TorrServer](https://github.com/YouROK/TorrServer) with additional features focused on **HDD-based media storage** and **improved UX**.
+
+### 📌 Pin Torrents (KeepFiles)
+
+A star button on every torrent card lets you **pin** a torrent. Pinned torrents are protected from automatic LRU cache eviction — they are only removed if unpinned content has already been cleared and disk space is still needed.
+
+### 🗄️ HDD-Optimized Sequential Preload
+
+When a torrent is added in **Disk** mode, TorrServer sequentially reads the first **N MB** of each file (configurable via *Preload file heads* setting, default 150 MB). Files are processed one by one to minimize HDD head seeks. This ensures playback can start immediately from cached data without waiting for on-demand buffering.
+
+### ⬇️ Auto Full Download
+
+An optional toggle that kicks in **after** sequential preload completes. When enabled, the entire torrent is queued for download in the background (`DownloadAll`). Useful when you want the full content pre-cached on disk. Cache size must be larger than the torrent for complete retention; otherwise LRU eviction keeps the most recently accessed data.
+
+### 🔄 Smart Global Cache Cleanup (LRU)
+
+A background worker runs every **30 seconds** and enforces the cache size limit automatically:
+
+1. Unpinned torrents are evicted first — sorted by last access time (oldest first)
+2. Pinned torrents are only evicted if unpinned content wasn't enough to free space
+
+### 📊 Cached % Indicator
+
+Each torrent card now displays the percentage of content currently stored in cache (e.g. `47%`), so you can see at a glance what's ready for instant playback.
+
+### ☑️ Multi-Torrent Playlist Export
+
+Hover over any torrent poster to reveal a **checkbox**. Select multiple torrents and download a combined `.m3u` playlist — open it in VLC to get a unified playlist of all selected content.
+
+### 💾 Disk Cache up to 100 GB
+
+The cache size slider in Disk mode now goes up to **100 GB** (was 20 GB). In RAM mode the slider is capped at **4 GB** to stay within realistic memory limits. Switching between modes automatically clamps the value to a reasonable range.
+
+### ⚙️ Always-On Advanced Settings
+
+The *Pro Mode* toggle has been removed. All advanced settings are always visible — no extra clicks needed.
+
+---
+
 ## AI Documentation
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/YouROK/TorrServer)

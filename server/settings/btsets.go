@@ -86,6 +86,10 @@ type BTSets struct {
 	// P2P Proxy
 	EnableProxy bool
 	ProxyHosts  []string
+
+	// HDD Media Storage
+	AutoDownload  bool  // start full download after sequential preload
+	PreloadSizeMB int64 // MB to preload from each file head (0 = disabled)
 }
 
 func (v *BTSets) String() string {
@@ -122,6 +126,10 @@ func SetBTSets(sets *BTSets) {
 	}
 	if sets.PreloadCache > 100 {
 		sets.PreloadCache = 100
+	}
+
+	if sets.UseDisk && sets.TorrentsSavePath == "" {
+		sets.TorrentsSavePath = "/opt/ts"
 	}
 
 	if sets.TorrentsSavePath == "" {
@@ -165,6 +173,7 @@ func SetDefaultConfig() {
 	sets.ResponsiveMode = true
 	sets.ShowFSActiveTorr = true
 	sets.StoreSettingsInJson = true
+	sets.PreloadSizeMB = 150
 	// Set default TMDB settings
 	sets.TMDBSettings = TMDBConfig{
 		APIKey:     "",

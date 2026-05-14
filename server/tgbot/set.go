@@ -22,6 +22,6 @@ func cmdSet(c tele.Context) error {
 		return c.Send(tr(c.Sender().ID, "set_title_required"))
 	}
 
-	torr.SetTorrent(hash, title, "", "", "")
+	torr.SetTorrent(hash, title, "", "", "", nil)
 	return c.Send(fmt.Sprintf(tr(c.Sender().ID, "set_done"), escapeHtml(title)))
 }

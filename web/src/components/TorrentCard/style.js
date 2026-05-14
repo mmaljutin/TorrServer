@@ -249,6 +249,32 @@ export const StyledButton = styled.button`
   `}
 `
 
+export const SelectCheckbox = styled.div`
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: ${({ isSelected }) => (isSelected ? '#CDDC39' : 'rgba(0,0,0,0.5)')};
+  border: 2px solid ${({ isSelected }) => (isSelected ? '#CDDC39' : 'rgba(255,255,255,0.7)')};
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  opacity: ${({ isSelected }) => (isSelected ? 1 : 0)};
+  transition: opacity 0.15s, background 0.15s;
+  z-index: 1;
+  font-size: 13px;
+  color: #1a1a1a;
+  font-weight: bold;
+
+  ${({ isSelected }) => !isSelected && `
+    .torrent-card-root:hover & {
+      opacity: 1;
+    }
+  `}
+`
+
 export const StatusIndicators = styled.div`
   ${({ color }) => css`
     height: 8px;

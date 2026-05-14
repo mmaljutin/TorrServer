@@ -41,7 +41,7 @@ export default function PrimarySettingsComponent({
   updateSettings,
 }) {
   const { t } = useTranslation()
-  const { UseDisk, TorrentsSavePath, RemoveCacheOnDrop } = settings || {}
+  const { UseDisk, TorrentsSavePath, RemoveCacheOnDrop, AutoDownload, PreloadSizeMB } = settings || {}
   const preloadCacheSize = Math.round((cacheSize / 100) * preloadCachePercentage)
 
   return (
@@ -77,11 +77,11 @@ export default function PrimarySettingsComponent({
           value={cacheSize}
           setValue={setCacheSize}
           sliderMin={32}
-          sliderMax={1024}
+          sliderMax={UseDisk ? 102400 : 4096}
           inputMin={32}
-          inputMax={999999}
-          step={4}
-          onBlurCallback={value => setCacheSize(Math.round(value / 4) * 4)}
+          inputMax={UseDisk ? 102400 : 4096}
+          step={UseDisk ? 1024 : 256}
+          onBlurCallback={value => setCacheSize(Math.round(value / (UseDisk ? 1024 : 256)) * (UseDisk ? 1024 : 256))}
         />
 
         <SliderInput
@@ -112,7 +112,7 @@ export default function PrimarySettingsComponent({
           <CacheStorageLocationLabel />
 
           <div style={{ display: 'grid', gridAutoFlow: 'column' }}>
-            <StorageButton small onClick={() => updateSettings({ UseDisk: false })}>
+            <StorageButton small onClick={() => { updateSettings({ UseDisk: false }); if (cacheSize > 4096) setCacheSize(4096) }}>
               <StorageIconWrapper small>
                 <RAMIcon color='#323637' />
               </StorageIconWrapper>
@@ -140,6 +140,35 @@ export default function PrimarySettingsComponent({
             <small>{t('SettingsDialog.RemoveCacheOnDropDesc')}</small>
           </div>
           <br />
+
+          <SliderInput
+            isProMode={isProMode}
+            title={t('SettingsDialog.PreloadSizeMB')}
+            value={PreloadSizeMB || 0}
+            setValue={value => updateSettings({ PreloadSizeMB: value })}
+            sliderMin={0}
+            sliderMax={1000}
+            inputMin={0}
+            inputMax={9999}
+            step={10}
+          />
+          <div>
+            <small>{t('SettingsDialog.PreloadSizeMBDesc')}</small>
+          </div>
+          <br />
+
+          <FormControlLabel
+            control={
+              <Switch checked={!!AutoDownload} onChange={inputForm} id='AutoDownload' color='secondary' />
+            }
+            label={t('SettingsDialog.AutoDownload')}
+            labelPlacement='start'
+          />
+          <div>
+            <small>{t('SettingsDialog.AutoDownloadDesc')}</small>
+          </div>
+          <br />
+
           <TextField
             onChange={inputForm}
             margin='normal'
@@ -163,7 +192,7 @@ export default function PrimarySettingsComponent({
             <div>{t('SettingsDialog.RAM')}</div>
           </StorageButton>
 
-          <StorageButton onClick={() => updateSettings({ UseDisk: true })}>
+          <StorageButton onClick={() => { updateSettings({ UseDisk: true, TorrentsSavePath: TorrentsSavePath || '/opt/ts' }); if (cacheSize < 1024) setCacheSize(4096) }}>
             <StorageIconWrapper>
               <USBIcon color='#323637' />
             </StorageIconWrapper>

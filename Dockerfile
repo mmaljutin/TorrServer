@@ -69,7 +69,9 @@ ENV GODEBUG=madvdontneed=1
 COPY --from=compressed ./torrserver /usr/bin/torrserver
 COPY ./docker-entrypoint.sh /docker-entrypoint.sh
 
-RUN apk add --no-cache --update ffmpeg
+RUN apk add --no-cache --update ffmpeg \
+    && sed -i 's/\r//' /docker-entrypoint.sh \
+    && chmod +x /docker-entrypoint.sh
 
-CMD /docker-entrypoint.sh
+CMD ["/docker-entrypoint.sh"]
 ### BUILD MAIN IMAGE end ###

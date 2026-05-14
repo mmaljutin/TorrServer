@@ -158,6 +158,10 @@
     "PeersListenPort": "Peers Listen Port",
     "PeersListenPortHint": "1024 - 65535, 0 - random",
     "PreloadCache": "Preload Cache Before Play",
+    "PreloadSizeMB": "Preload file heads (MB)",
+    "PreloadSizeMBDesc": "Automatically download first N MB of each file after adding torrent. 0 — disabled.",
+    "AutoDownload": "Auto full download",
+    "AutoDownloadDesc": "After preloading file heads, download the entire torrent.",
     "ProMode": "PRO mode",
     "ProxyHosts": "Proxy host list",
     "ProxyHostsHint": "Enter domains separated by commas. Masks are supported, e.g.: *themoviedb.org, *tmdb.org, rutor.info",
@@ -210,6 +214,7 @@
     "ViewedHistoryStorage": "Viewed History Storage:",
     "ViewedStorageHint": "Choose where to store viewed history"
   },
+  "KeepFiles": "Pin",
   "Size": "Size",
   "SpecialThanks": "Special Thanks",
   "Speed": "Speed",

@@ -3,6 +3,7 @@ package torr
 import (
 	"fmt"
 	"io"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -269,6 +270,79 @@ func (t *Torrent) Preload(index int, size int64) {
 			"Peers:", t.Torrent.Stats().ActivePeers, "/",
 			t.Torrent.Stats().TotalPeers, "[ Seeds:",
 			t.Torrent.Stats().ConnectedSeeders, "]")
+	}
+}
+
+// SequentialPreload downloads the first PreloadSizeMB bytes of each video file one by one.
+// After all heads are preloaded, if AutoDownload is enabled, the entire torrent is queued for download.
+// Designed for HDD: sequential file-by-file to minimize head seeks.
+func (t *Torrent) SequentialPreload() {
+	preloadBytes := settings.BTsets.PreloadSizeMB * 1024 * 1024
+	if preloadBytes <= 0 || !settings.BTsets.UseDisk {
+		return
+	}
+
+	files := t.Files()
+	if len(files) == 0 {
+		return
+	}
+
+	sort.Slice(files, func(i, j int) bool {
+		return utils2.CompareStrings(files[i].Path(), files[j].Path())
+	})
+
+	log.TLogln("SequentialPreload start:", t.Hash().HexString(), "files:", len(files), "preload:", preloadBytes)
+
+	for _, file := range files {
+		t.muTorrent.Lock()
+		closed := t.Stat == state.TorrentClosed
+		t.muTorrent.Unlock()
+		if closed {
+			return
+		}
+
+		size := preloadBytes
+		if size > file.Length() {
+			size = file.Length()
+		}
+
+		reader := file.NewReader()
+		if reader == nil {
+			continue
+		}
+		reader.SetResponsive()
+		reader.SetReadahead(0)
+
+		buf := make([]byte, 32768)
+		var offset int64
+		for offset < size {
+			t.muTorrent.Lock()
+			closed = t.Stat == state.TorrentClosed
+			t.muTorrent.Unlock()
+			if closed {
+				reader.Close()
+				return
+			}
+			n, err := reader.Read(buf)
+			if err != nil {
+				break
+			}
+			offset += int64(n)
+		}
+		reader.Close()
+		log.TLogln("SequentialPreload file done:", file.Path(), utils2.Format(float64(offset)))
+	}
+
+	log.TLogln("SequentialPreload complete:", t.Hash().HexString())
+
+	if settings.BTsets.AutoDownload {
+		t.muTorrent.Lock()
+		closed := t.Stat == state.TorrentClosed
+		t.muTorrent.Unlock()
+		if !closed && t.Torrent != nil {
+			log.TLogln("AutoDownload start:", t.Hash().HexString())
+			t.Torrent.DownloadAll()
+		}
 	}
 }
 

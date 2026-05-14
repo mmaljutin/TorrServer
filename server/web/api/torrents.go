@@ -20,13 +20,14 @@ import (
 // Action: add, get, set, rem, list, drop
 type torrReqJS struct {
 	requestI
-	Link     string `json:"link,omitempty"`
-	Hash     string `json:"hash,omitempty"`
-	Title    string `json:"title,omitempty"`
-	Category string `json:"category,omitempty"`
-	Poster   string `json:"poster,omitempty"`
-	Data     string `json:"data,omitempty"`
-	SaveToDB bool   `json:"save_to_db,omitempty"`
+	Link      string `json:"link,omitempty"`
+	Hash      string `json:"hash,omitempty"`
+	Title     string `json:"title,omitempty"`
+	Category  string `json:"category,omitempty"`
+	Poster    string `json:"poster,omitempty"`
+	Data      string `json:"data,omitempty"`
+	SaveToDB  bool   `json:"save_to_db,omitempty"`
+	KeepFiles *bool  `json:"keep_files,omitempty"`
 }
 
 // torrents godoc
@@ -146,6 +147,10 @@ func addTorrent(req torrReqJS, c *gin.Context) {
 		if req.SaveToDB {
 			torr.SaveTorrentToDB(tor)
 		}
+
+		if set.BTsets.UseDisk && set.BTsets.PreloadSizeMB > 0 {
+			go tor.SequentialPreload()
+		}
 	}()
 
 	if set.BTsets.EnableDLNA {
@@ -175,7 +180,7 @@ func setTorrent(req torrReqJS, c *gin.Context) {
 		c.AbortWithError(http.StatusBadRequest, errors.New("hash is empty"))
 		return
 	}
-	torr.SetTorrent(req.Hash, req.Title, req.Poster, req.Category, req.Data)
+	torr.SetTorrent(req.Hash, req.Title, req.Poster, req.Category, req.Data, req.KeepFiles)
 	c.Status(200)
 }
 

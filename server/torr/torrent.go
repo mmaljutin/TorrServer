@@ -26,6 +26,7 @@ type Torrent struct {
 	Category string
 	Poster   string
 	Data     string
+	KeepFiles bool
 	*torrent.TorrentSpec
 
 	Stat      state.TorrentStat
@@ -121,6 +122,7 @@ func (t *Torrent) WaitInfo() bool {
 		if t.bt != nil && t.bt.storage != nil {
 			t.cache = t.bt.storage.GetCache(t.Hash())
 			t.cache.SetTorrent(t.Torrent)
+			t.cache.SetKeepFiles(t.KeepFiles)
 		}
 		return true
 	case <-t.closed:
@@ -315,6 +317,7 @@ func (t *Torrent) Status() *state.TorrentStatus {
 	st.TorrentSize = t.Size
 	st.BitRate = t.BitRate
 	st.DurationSeconds = t.DurationSeconds
+	st.KeepFiles = t.KeepFiles
 
 	if t.TorrentSpec != nil {
 		st.Hash = t.TorrentSpec.InfoHash.HexString()
