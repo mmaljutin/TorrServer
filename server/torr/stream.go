@@ -36,7 +36,7 @@ func GlobalServedBytes() int64 {
 
 // viewedThresholdPercent is the share of a file that must be served to a player
 // before the file is marked as Viewed.
-const viewedThresholdPercent = 90
+const viewedThresholdPercent = 85
 
 // viewedTracker accumulates bytes served per (torrent file) across the many separate
 // HTTP range requests that make up a single playback (the stream uses Connection: close,
