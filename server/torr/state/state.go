@@ -65,6 +65,7 @@ type TorrentStatus struct {
 	PiecesDirtiedBad    int64       `json:"pieces_dirtied_bad,omitempty"`
 	DurationSeconds     float64     `json:"duration_seconds,omitempty"`
 	BitRate             string      `json:"bit_rate,omitempty"`
+	ServedBytes         int64       `json:"served_bytes,omitempty"`
 
 	FileStats []*TorrentFileStat `json:"file_stats,omitempty"`
 	KeepFiles bool               `json:"keep_files,omitempty"`

@@ -7,6 +7,9 @@ import {
   PhotoSizeSelectSmall as PhotoSizeSelectSmallIcon,
   Build as BuildIcon,
   Category as CategoryIcon,
+  CloudDownload as CloudDownloadIcon,
+  CloudUpload as CloudUploadIcon,
+  Cast as CastIcon,
 } from '@material-ui/icons'
 import { getPeerString, humanizeSize, humanizeSpeed } from 'utils/Utils'
 import { useTranslation } from 'react-i18next'
@@ -110,6 +113,51 @@ export const StatusWidget = ({ stat }) => {
       iconBg={iconBGColor}
       valueBg={valueBGColor}
       icon={BuildIcon}
+    />
+  )
+}
+
+export const TrafficDownWidget = ({ data }) => {
+  const { t } = useTranslation()
+  const { iconBGColor, valueBGColor } = useGetWidgetColors('trafficDown')
+
+  return (
+    <StatisticsField
+      title={t('InternetDownloaded')}
+      value={humanizeSize(data) || `0 ${t('B')}`}
+      iconBg={iconBGColor}
+      valueBg={valueBGColor}
+      icon={CloudDownloadIcon}
+    />
+  )
+}
+
+export const TrafficUpWidget = ({ data }) => {
+  const { t } = useTranslation()
+  const { iconBGColor, valueBGColor } = useGetWidgetColors('trafficUp')
+
+  return (
+    <StatisticsField
+      title={t('InternetUploaded')}
+      value={humanizeSize(data) || `0 ${t('B')}`}
+      iconBg={iconBGColor}
+      valueBg={valueBGColor}
+      icon={CloudUploadIcon}
+    />
+  )
+}
+
+export const ServedToPlayerWidget = ({ data }) => {
+  const { t } = useTranslation()
+  const { iconBGColor, valueBGColor } = useGetWidgetColors('served')
+
+  return (
+    <StatisticsField
+      title={t('ServedToPlayer')}
+      value={humanizeSize(data) || `0 ${t('B')}`}
+      iconBg={iconBGColor}
+      valueBg={valueBGColor}
+      icon={CastIcon}
     />
   )
 }

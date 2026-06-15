@@ -23,6 +23,32 @@ import (
 // Add atomic counter for concurrent streams
 var activeStreams int32
 
+// globalServedBytes accumulates all bytes served to players over HTTP (LAN) across
+// every torrent. Session-scoped: resets on server restart, survives per-torrent drop.
+var globalServedBytes int64
+
+// GlobalServedBytes returns total bytes served to players since server start.
+func GlobalServedBytes() int64 {
+	return atomic.LoadInt64(&globalServedBytes)
+}
+
+// countingWriter wraps the HTTP ResponseWriter to count bytes served to the player.
+// It delegates every call to the underlying writer (so gin still sees the data) and
+// increments both the per-torrent and global served counters on each Write.
+type countingWriter struct {
+	http.ResponseWriter
+	t *Torrent
+}
+
+func (cw *countingWriter) Write(b []byte) (int, error) {
+	n, err := cw.ResponseWriter.Write(b)
+	if n > 0 {
+		atomic.AddInt64(&cw.t.ServedBytes, int64(n))
+		atomic.AddInt64(&globalServedBytes, int64(n))
+	}
+	return n, err
+}
+
 // type contextResponseWriter struct {
 // 	http.ResponseWriter
 // 	ctx context.Context
@@ -152,7 +178,7 @@ func (t *Torrent) Stream(fileID int, req *http.Request, resp http.ResponseWriter
 	// }
 	// http.ServeContent(wrappedResp, req, file.Path(), time.Unix(t.Timestamp, 0), reader)
 
-	http.ServeContent(resp, req, file.Path(), time.Unix(t.Timestamp, 0), reader)
+	http.ServeContent(&countingWriter{ResponseWriter: resp, t: t}, req, file.Path(), time.Unix(t.Timestamp, 0), reader)
 
 	if sets.BTsets.EnableDebug {
 		if clerr != nil {

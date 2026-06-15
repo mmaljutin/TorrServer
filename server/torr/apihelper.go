@@ -215,6 +215,22 @@ func ListTorrent() []*Torrent {
 	return ret
 }
 
+// GlobalTraffic returns server-wide, session-scoped traffic totals in bytes:
+// download/upload are summed over currently active torrents (anacrolix session stats),
+// served is the cumulative bytes sent to players over HTTP since server start.
+func GlobalTraffic() (download, upload, served int64) {
+	for _, torr := range bts.ListTorrents() {
+		if torr.Torrent == nil {
+			continue
+		}
+		st := torr.Torrent.Stats()
+		download += st.BytesRead.Int64()
+		upload += st.BytesWritten.Int64()
+	}
+	served = GlobalServedBytes()
+	return
+}
+
 func DropTorrent(hashHex string) {
 	hash := metainfo.NewHashFromHex(hashHex)
 	bts.RemoveTorrent(hash)

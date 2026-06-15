@@ -19,6 +19,7 @@ import { TORRENT_CATEGORIES } from 'components/categories'
 import FilterByCategory from 'components/FilterByCategory'
 
 import { AppSidebarStyle } from './style'
+import TrafficStat from './TrafficStat'
 
 const Sidebar = ({ isDrawerOpen, setIsDonationDialogOpen, isOffline, isLoading, setGlobalFilterCategory }) => {
   const { t } = useTranslation()
@@ -78,6 +79,10 @@ const Sidebar = ({ isDrawerOpen, setIsDonationDialogOpen, isOffline, isLoading, 
 
         <CloseServer isOffline={isOffline} isLoading={isLoading} />
       </List>
+
+      <Divider />
+
+      <TrafficStat isOffline={isOffline} />
     </AppSidebarStyle>
   )
 }

@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	utils2 "server/utils"
@@ -47,6 +48,8 @@ type Torrent struct {
 
 	PreloadSize    int64
 	PreloadedBytes int64
+
+	ServedBytes int64 // bytes served to players over HTTP (LAN), accessed atomically
 
 	DurationSeconds float64
 	BitRate         string
@@ -329,6 +332,7 @@ func (t *Torrent) Status() *state.TorrentStatus {
 
 		st.PreloadedBytes = t.PreloadedBytes
 		st.PreloadSize = t.PreloadSize
+		st.ServedBytes = atomic.LoadInt64(&t.ServedBytes)
 		st.DownloadSpeed = t.DownloadSpeed
 		st.UploadSpeed = t.UploadSpeed
 

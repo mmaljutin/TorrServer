@@ -16,6 +16,7 @@ export const torznabSearchHost = () => `${torrserverHost}/torznab/search`
 export const searchHost = () => `${torrserverHost}/search`
 export const torznabTestHost = () => `${torrserverHost}/torznab/test`
 export const tmdbSettingsHost = () => `${torrserverHost}/tmdb/settings`
+export const trafficStatHost = () => `${torrserverHost}/trafficstat`
 
 export const getTorrServerHost = () => torrserverHost
 export const setTorrServerHost = host => {

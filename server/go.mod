@@ -32,6 +32,7 @@ require (
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
 	golang.org/x/image v0.33.0
 	golang.org/x/net v0.49.0
+	golang.org/x/sys v0.40.0
 	golang.org/x/time v0.14.0
 	gopkg.in/telebot.v4 v4.0.0-beta.7
 	gopkg.in/vansante/go-ffprobe.v2 v2.2.1
@@ -197,7 +198,6 @@ require (
 	golang.org/x/crypto v0.47.0 // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260109210033-bd525da824e2 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/tools v0.41.0 // indirect
