@@ -6,26 +6,20 @@
   Simple and powerful tool for streaming torrents.
   <br/>
   <br/>
-  <a href="https://github.com/YouROK/TorrServer/blob/master/LICENSE">
-    <img alt="GitHub" src="https://img.shields.io/github/license/YouROK/TorrServer"/>
+  <a href="https://github.com/mmaljutin/TorrServer/blob/master/LICENSE">
+    <img alt="GitHub" src="https://img.shields.io/github/license/mmaljutin/TorrServer"/>
   </a>
-  <a href="https://goreportcard.com/report/github.com/YouROK/TorrServer">
-    <img src="https://goreportcard.com/badge/github.com/YouROK/TorrServer" />
+  <a href="https://goreportcard.com/report/github.com/mmaljutin/TorrServer">
+    <img src="https://goreportcard.com/badge/github.com/mmaljutin/TorrServer" />
   </a>
-  <a href="https://pkg.go.dev/github.com/YouROK/TorrServer">
-    <img src="https://pkg.go.dev/badge/github.com/YouROK/TorrServer.svg" alt="Go Reference"/>
+  <a href="https://github.com/mmaljutin/TorrServer/issues">
+    <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat" alt="Contributions welcome" />
   </a>
-  <a href="https://github.com/YouROK/TorrServer/issues">
-    <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat" alt="CodeFactor" />
+  <a href="https://github.com/mmaljutin/TorrServer/actions/workflows/docker_image.yml" rel="nofollow">
+    <img src="https://img.shields.io/github/actions/workflow/status/mmaljutin/TorrServer/docker_image.yml?logo=Github" alt="Build" />
   </a>
-  <a href="https://github.com/YouROK/TorrServer/actions/workflows/docker_image.yml" rel="nofollow">
-    <img src="https://img.shields.io/github/actions/workflow/status/YouROK/TorrServer/docker_image.yml?logo=Github" alt="Build" />
-  </a>
-  <a href="https://github.com/YouROK/TorrServer/releases" rel="nofollow">
-    <img alt="GitHub release (latest SemVer)" src="https://img.shields.io/github/v/release/YouROK/TorrServer?label=version"/>
-  </a>
-  <a href="https://github.com/YouROK/TorrServer/tags" rel="nofollow">
-    <img alt="GitHub tag (latest SemVer pre-release)" src="https://img.shields.io/github/v/tag/YouROK/TorrServer?include_prereleases&label=pre-release"/>
+  <a href="https://github.com/mmaljutin/TorrServer/pkgs/container/torrserver" rel="nofollow">
+    <img alt="Docker image" src="https://img.shields.io/badge/ghcr.io-mmaljutin%2Ftorrserver%3Amaster-blue?logo=docker"/>
   </a>
 </p>
 
