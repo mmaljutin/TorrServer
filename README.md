@@ -43,7 +43,7 @@ allowing the cache size to be adjusted according to the system parameters and th
 
 ### 📌 Pin Torrents (KeepFiles)
 
-A star button on every torrent card lets you **pin** a torrent. Pinned torrents are protected from cache eviction — useful for content you want to keep on disk long-term.
+A star button on every torrent card lets you **pin** a torrent. Pinned torrents are **truly persistent**: their downloaded pieces are never evicted by the LRU cache and stay on disk even when the file is **larger than the cache**. Pinned data lives *outside* the `CacheSize` budget — it is bounded only by free disk space (a safety reserve keeps the disk from filling up). Unpin (toggle the star off) and the torrent rejoins normal LRU cleanup. Ideal for content you want to keep long-term on an HDD media store.
 
 ### 🗄️ HDD-Optimized Pre-cache on Add
 
@@ -51,7 +51,9 @@ When a torrent is added in **Disk** mode, TorrServer sequentially caches the fir
 
 ### ⬇️ Auto Full Download on Play
 
-Optional toggle: when a file is opened in a player (VLC, browser, etc.), TorrServer starts downloading the **entire file** to disk in the background. So while you're watching episode 1, episode 2's preload kicks in, and episode 1 finishes downloading fully. Files stay on disk for offline playback later.
+Optional toggle (*Download fully when opened*): when a file is opened in a player (VLC, browser, etc.), TorrServer **auto-pins the torrent** and downloads the **entire file** to disk in the background. So while you're watching episode 1, episode 1 finishes downloading fully and stays on disk for offline playback later.
+
+Because the file is auto-pinned, its pieces persist beyond the cache size instead of looping forever — a file bigger than the cache downloads to 100% and then **stops** (no endless re-downloading saturating your channel). Before starting, TorrServer checks free disk space and **skips** the download if it would leave less than a safety reserve (~2 GB) free.
 
 ### 🎚️ Precise Playback Buffer (MB)
 
@@ -76,6 +78,32 @@ The cache size slider in Disk mode now goes up to **100 GB** (was 20 GB). RAM mo
 ### ⚙️ Sensible Defaults for HDD Mode
 
 *Reset to Default* now configures TorrServer for disk-based media storage: 4096 MB cache, 95% readahead, 150 MB playback buffer, 50 MB pre-cache per file, UseDisk on, save path `/opt/ts`. The Pro Mode toggle has been removed — all advanced settings are always visible.
+
+### 📊 Traffic Counters
+
+See exactly how much bandwidth each torrent uses. In the **torrent details dialog** three new widgets show:
+
+- **Internet ↓** — data actually downloaded from peers (real internet usage in).
+- **Internet ↑** — data uploaded to peers (seeding).
+- **Served to player** — bytes streamed to your players over the LAN (playback traffic).
+
+The **sidebar** shows a server-wide total (`↓ / ↑ / served`), refreshed live. Counters are **session-scoped**: per-torrent values reset when a torrent is dropped or the server restarts; the global *served* total persists across drops until restart. Exposed via the `GET /trafficstat` API.
+
+### 📈 % Cached Indicator
+
+Each torrent card shows how much of the torrent is currently on disk as a percentage (`bytesCompleted / totalSize`), so you can tell at a glance what's fully downloaded.
+
+---
+
+## Versioning
+
+This fork uses its own version string, set in [`server/version/version.go`](server/version/version.go):
+
+```
+MatriX.141.<y>-hdd
+```
+
+**Rule:** every commit bumps `<y>` by **1** (e.g. `MatriX.141.1-hdd` → `MatriX.141.2-hdd` → …). The `141` base tracks the upstream YouROK/TorrServer `MatriX.141` release this fork is based on; the `-hdd` suffix marks the HDD-storage fork.
 
 ---
 
