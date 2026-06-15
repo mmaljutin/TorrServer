@@ -12,10 +12,15 @@ import (
 	"server/log"
 	"server/settings"
 	"server/torr/state"
+	"server/torr/storage/torrstor"
 	utils2 "server/utils"
 
 	"github.com/anacrolix/torrent"
 )
+
+// diskFreeReserve is the minimum free space to keep on disk when starting a
+// full background download (AutoDownload). Prevents filling an HDD media store.
+const diskFreeReserve = 2 << 30 // 2 GB
 
 func (t *Torrent) Preload(index int, size int64) {
 	if size <= 0 {
@@ -328,6 +333,28 @@ func (t *Torrent) DownloadFileByIndex(index int) {
 		log.TLogln("AutoDownload: file not found index", index, t.Hash().HexString())
 		return
 	}
+
+	// Disk-space guard: don't start a full download that would fill the disk.
+	remaining := file.Length() - file.BytesCompleted()
+	if remaining > 0 {
+		free := torrstor.FreeSpace(settings.BTsets.TorrentsSavePath)
+		if free >= 0 && free-remaining < diskFreeReserve {
+			log.TLogln("AutoDownload skipped: not enough free disk for", file.DisplayPath(),
+				"need:", utils2.Format(float64(remaining)), "free:", utils2.Format(float64(free)))
+			return
+		}
+	}
+
+	// Pin the torrent so downloaded pieces persist on disk and are never evicted by
+	// the LRU cache — otherwise a file larger than the cache re-downloads forever.
+	if !t.KeepFiles {
+		t.KeepFiles = true
+		if t.cache != nil {
+			t.cache.SetKeepFiles(true)
+		}
+		AddTorrentDB(t)
+	}
+
 	log.TLogln("AutoDownload start:", file.DisplayPath(), t.Hash().HexString())
 	t.AddExpiredTime(time.Hour * 24) // keep torrent alive during download
 	file.Download()

@@ -224,6 +224,19 @@ func (c *Cache) getRemPieces() []*Piece {
 	piecesRemove := make([]*Piece, 0)
 	fill := int64(0)
 
+	// Pinned (keepFiles) torrents are persistent: their pieces are never evicted and
+	// their piece priorities are not touched here — the full download is driven by
+	// file.Download(). Just account the fill for state/global-cleanup reporting.
+	if c.keepFiles {
+		for _, p := range c.pieces {
+			if p.Size > 0 {
+				fill += p.Size
+			}
+		}
+		c.filled = fill
+		return piecesRemove
+	}
+
 	ranges := make([]Range, 0)
 	c.muReaders.Lock()
 	for r := range c.readers {
@@ -368,9 +381,13 @@ func (c *Cache) CloseReader(r *Reader) {
 }
 
 func (c *Cache) clearPriority() {
-	if c.torrent == nil { 
-        return 
-    }
+	if c.torrent == nil {
+		return
+	}
+	// Pinned torrents keep their priorities (driven by file.Download); don't reset them.
+	if c.keepFiles {
+		return
+	}
 	time.Sleep(time.Second)
 	ranges := make([]Range, 0)
 	c.muReaders.Lock()

@@ -78,8 +78,10 @@ func (s *Storage) GetCache(hash metainfo.Hash) *Cache {
 	return nil
 }
 
-// globalCleanupWorker monitors total disk usage and evicts pieces when over the global CacheSize limit.
-// Eviction order: LRU pieces from unpinned caches first, then from oldest pinned caches.
+// globalCleanupWorker monitors total disk usage of transient (unpinned) caches and
+// evicts LRU pieces when their combined size exceeds the global CacheSize limit.
+// Pinned (keepFiles) caches are excluded — they persist on disk and are bounded only
+// by free space, not by CacheSize.
 func (s *Storage) globalCleanupWorker() {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
@@ -99,54 +101,42 @@ func (s *Storage) runGlobalCleanup() {
 	}
 	s.mu.Unlock()
 
-	// sum total filled bytes
+	// Pinned (keepFiles) caches are persistent and live outside the CacheSize budget —
+	// they are bounded by free disk space, not by the ring cache. Only transient
+	// (unpinned) caches count toward the global limit and are eligible for eviction.
+	type cacheEntry struct {
+		cache      *Cache
+		lastAccess int64
+	}
 	var total int64
+	var transient []cacheEntry
 	for _, c := range caches {
+		if c.keepFiles {
+			continue
+		}
 		total += c.filled
+		transient = append(transient, cacheEntry{cache: c, lastAccess: c.lastAccessTime()})
 	}
 	if total <= settings.BTsets.CacheSize {
 		return
 	}
 
-	// split into unpinned (evict first) and pinned (evict last)
-	type cacheEntry struct {
-		cache       *Cache
-		lastAccess  int64
-	}
-	var unpinned, pinned []cacheEntry
-	for _, c := range caches {
-		entry := cacheEntry{cache: c, lastAccess: c.lastAccessTime()}
-		if c.keepFiles {
-			pinned = append(pinned, entry)
-		} else {
-			unpinned = append(unpinned, entry)
-		}
-	}
 	// oldest first
-	sortByAccess := func(a []cacheEntry) {
-		sort.Slice(a, func(i, j int) bool { return a[i].lastAccess < a[j].lastAccess })
-	}
-	sortByAccess(unpinned)
-	sortByAccess(pinned)
+	sort.Slice(transient, func(i, j int) bool { return transient[i].lastAccess < transient[j].lastAccess })
 
-	evict := func(entries []cacheEntry) bool {
-		for _, e := range entries {
-			e.cache.cleanPieces()
-			var newTotal int64
-			s.mu.Lock()
-			for _, c := range s.caches {
-				newTotal += c.filled
+	for _, e := range transient {
+		e.cache.cleanPieces()
+		var newTotal int64
+		s.mu.Lock()
+		for _, c := range s.caches {
+			if c.keepFiles {
+				continue
 			}
-			s.mu.Unlock()
-			if newTotal <= settings.BTsets.CacheSize {
-				return true
-			}
+			newTotal += c.filled
 		}
-		return false
+		s.mu.Unlock()
+		if newTotal <= settings.BTsets.CacheSize {
+			return
+		}
 	}
-
-	if evict(unpinned) {
-		return
-	}
-	evict(pinned)
 }
