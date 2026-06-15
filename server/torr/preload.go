@@ -335,7 +335,13 @@ func (t *Torrent) DownloadFileByIndex(index int) {
 	}
 
 	// Disk-space guard: don't start a full download that would fill the disk.
-	remaining := file.Length() - file.BytesCompleted()
+	var completed int64
+	for _, ps := range file.State() {
+		if ps.Complete {
+			completed += ps.Bytes
+		}
+	}
+	remaining := file.Length() - completed
 	if remaining > 0 {
 		free := torrstor.FreeSpace(settings.BTsets.TorrentsSavePath)
 		if free >= 0 && free-remaining < diskFreeReserve {
