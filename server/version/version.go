@@ -7,7 +7,7 @@ import (
 
 // Version is set at build time via -ldflags "-X server/version.Version=<tag>"
 // Versioning rule: format "MatriX.141.<y>-hdd"; bump <y> by 1 on every commit.
-var Version = "MatriX.141.2-hdd"
+var Version = "MatriX.141.3-hdd"
 
 func GetTorrentVersion() string {
 	bi, ok := debug.ReadBuildInfo()

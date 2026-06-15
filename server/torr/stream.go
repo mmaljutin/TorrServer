@@ -8,6 +8,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -32,12 +34,48 @@ func GlobalServedBytes() int64 {
 	return atomic.LoadInt64(&globalServedBytes)
 }
 
+// viewedThresholdPercent is the share of a file that must be served to a player
+// before the file is marked as Viewed.
+const viewedThresholdPercent = 90
+
+// viewedTracker accumulates bytes served per (torrent file) across the many separate
+// HTTP range requests that make up a single playback (the stream uses Connection: close,
+// so each request is its own handler call). When the cumulative served bytes for a file
+// reach viewedThresholdPercent of its length, the file is marked Viewed once.
+type viewedTracker struct {
+	mu     sync.Mutex
+	served map[string]int64
+}
+
+var viewTracker = &viewedTracker{served: make(map[string]int64)}
+
+func (vt *viewedTracker) add(hash string, index int, n, fileLen int64) {
+	if fileLen <= 0 || n <= 0 {
+		return
+	}
+	key := hash + "/" + strconv.Itoa(index)
+	vt.mu.Lock()
+	cur := vt.served[key] + n
+	vt.served[key] = cur
+	reached := cur*100 >= fileLen*viewedThresholdPercent
+	if reached {
+		delete(vt.served, key) // stop tracking; already counted toward Viewed
+	}
+	vt.mu.Unlock()
+	if reached {
+		go sets.SetViewed(&sets.Viewed{Hash: hash, FileIndex: index})
+	}
+}
+
 // countingWriter wraps the HTTP ResponseWriter to count bytes served to the player.
-// It delegates every call to the underlying writer (so gin still sees the data) and
-// increments both the per-torrent and global served counters on each Write.
+// It delegates every call to the underlying writer (so gin still sees the data),
+// increments the per-torrent and global served counters, and feeds the viewed tracker.
 type countingWriter struct {
 	http.ResponseWriter
-	t *Torrent
+	t       *Torrent
+	hash    string
+	index   int
+	fileLen int64
 }
 
 func (cw *countingWriter) Write(b []byte) (int, error) {
@@ -45,6 +83,7 @@ func (cw *countingWriter) Write(b []byte) (int, error) {
 	if n > 0 {
 		atomic.AddInt64(&cw.t.ServedBytes, int64(n))
 		atomic.AddInt64(&globalServedBytes, int64(n))
+		viewTracker.add(cw.hash, cw.index, int64(n), cw.fileLen)
 	}
 	return n, err
 }
@@ -129,11 +168,8 @@ func (t *Torrent) Stream(fileID int, req *http.Request, resp http.ResponseWriter
 		}
 	}
 
-	// Mark as viewed
-	sets.SetViewed(&sets.Viewed{
-		Hash:      t.Hash().HexString(),
-		FileIndex: fileID,
-	})
+	// Viewed is marked later, once >viewedThresholdPercent of the file has actually
+	// been served to the player (see viewedTracker), not merely on opening the stream.
 
 	// Set response headers
 	resp.Header().Set("Connection", "close")
@@ -178,7 +214,8 @@ func (t *Torrent) Stream(fileID int, req *http.Request, resp http.ResponseWriter
 	// }
 	// http.ServeContent(wrappedResp, req, file.Path(), time.Unix(t.Timestamp, 0), reader)
 
-	http.ServeContent(&countingWriter{ResponseWriter: resp, t: t}, req, file.Path(), time.Unix(t.Timestamp, 0), reader)
+	cw := &countingWriter{ResponseWriter: resp, t: t, hash: t.Hash().HexString(), index: fileID, fileLen: file.Length()}
+	http.ServeContent(cw, req, file.Path(), time.Unix(t.Timestamp, 0), reader)
 
 	if sets.BTsets.EnableDebug {
 		if clerr != nil {
